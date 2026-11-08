@@ -1,0 +1,10 @@
+C:\Users\sjise\Desktop\VideoQuickCut\VideoQuickCut\bin\Debug\VideoQuickCut.exe.config
+C:\Users\sjise\Desktop\VideoQuickCut\VideoQuickCut\bin\Debug\VideoQuickCut.exe
+C:\Users\sjise\Desktop\VideoQuickCut\VideoQuickCut\bin\Debug\VideoQuickCut.pdb
+C:\Users\sjise\Desktop\VideoQuickCut\VideoQuickCut\obj\Debug\VideoQuickCut.csproj.AssemblyReference.cache
+C:\Users\sjise\Desktop\VideoQuickCut\VideoQuickCut\obj\Debug\VideoQuickCut.Form1.resources
+C:\Users\sjise\Desktop\VideoQuickCut\VideoQuickCut\obj\Debug\VideoQuickCut.Properties.Resources.resources
+C:\Users\sjise\Desktop\VideoQuickCut\VideoQuickCut\obj\Debug\VideoQuickCut.csproj.GenerateResource.cache
+C:\Users\sjise\Desktop\VideoQuickCut\VideoQuickCut\obj\Debug\VideoQuickCut.csproj.CoreCompileInputs.cache
+C:\Users\sjise\Desktop\VideoQuickCut\VideoQuickCut\obj\Debug\VideoQuickCut.exe
+C:\Users\sjise\Desktop\VideoQuickCut\VideoQuickCut\obj\Debug\VideoQuickCut.pdb
