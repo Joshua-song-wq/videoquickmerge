@@ -6,3 +6,5 @@ It needs Gyan.FFmpeg, so install it using this command.
 ```powershell
 winget install Gyan.FFmpeg
 ```
+
+<img width="645" height="442" alt="Screenshot 2026-11-08 142444" src="https://github.com/user-attachments/assets/59819a4d-8dec-4a40-af10-e2331e5689a7" />
