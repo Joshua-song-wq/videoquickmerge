@@ -1,0 +1,10 @@
+C:\Users\sjise\Desktop\videomerge\videomerge\bin\Release\videomerge.exe.config
+C:\Users\sjise\Desktop\videomerge\videomerge\bin\Release\videomerge.exe
+C:\Users\sjise\Desktop\videomerge\videomerge\bin\Release\videomerge.pdb
+C:\Users\sjise\Desktop\videomerge\videomerge\obj\Release\videomerge.csproj.AssemblyReference.cache
+C:\Users\sjise\Desktop\videomerge\videomerge\obj\Release\videomerge.Form1.resources
+C:\Users\sjise\Desktop\videomerge\videomerge\obj\Release\videomerge.Properties.Resources.resources
+C:\Users\sjise\Desktop\videomerge\videomerge\obj\Release\videomerge.csproj.GenerateResource.cache
+C:\Users\sjise\Desktop\videomerge\videomerge\obj\Release\videomerge.csproj.CoreCompileInputs.cache
+C:\Users\sjise\Desktop\videomerge\videomerge\obj\Release\videomerge.exe
+C:\Users\sjise\Desktop\videomerge\videomerge\obj\Release\videomerge.pdb
