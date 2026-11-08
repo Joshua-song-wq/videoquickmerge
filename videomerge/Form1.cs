@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -243,7 +243,49 @@ namespace videomerge
 
             return info;
         }
+        // Detect NVIDIA GPU hardware using Windows CIM.
+        private async Task<string> DetectNvidiaGpuAsync()
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    ProcessStartInfo psi = new ProcessStartInfo();
 
+                    psi.FileName = "powershell.exe";
+                    psi.Arguments =
+                        "-NoProfile -NonInteractive -Command " +
+                        "\"$gpu = Get-CimInstance Win32_VideoController | " +
+                        "Where-Object { $_.Name -match 'NVIDIA' }; " +
+                        "if ($gpu) { $gpu.Name }\"";
+
+                    psi.UseShellExecute = false;
+                    psi.RedirectStandardOutput = true;
+                    psi.RedirectStandardError = true;
+                    psi.CreateNoWindow = true;
+
+                    using (Process process = new Process())
+                    {
+                        process.StartInfo = psi;
+                        process.Start();
+
+                        string output =
+                            process.StandardOutput.ReadToEnd();
+
+                        process.WaitForExit();
+
+                        if (process.ExitCode != 0)
+                            return "";
+
+                        return output.Trim();
+                    }
+                }
+                catch
+                {
+                    return "";
+                }
+            });
+        }
         private async Task<bool> IsNvencAvailableAsync()
         {
             var result = await RunProcessAsync(
@@ -348,10 +390,76 @@ namespace videomerge
             lblStatus.Text = "Ready";
         }
 
+
         private async void btnMerge_Click(object sender, EventArgs e)
         {
             if (isMerging)
                 return;
+
+            // =========================================
+            // GPU SELECTION - ASK IMMEDIATELY ON CLICK
+            // =========================================
+
+            bool useNvenc = false;
+
+            DialogResult gpuChoice = MessageBox.Show(
+                "Do you want to use NVIDIA GPU encoding?",
+                "Encoding Selection",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
+
+            if (gpuChoice == DialogResult.Yes)
+            {
+                Log("Checking for NVIDIA GPU...");
+
+                string gpuName = await DetectNvidiaGpuAsync();
+
+                if (!string.IsNullOrWhiteSpace(gpuName))
+                {
+                    Log("NVIDIA GPU detected: " + gpuName);
+
+                    Log("Checking FFmpeg NVENC support...");
+
+                    bool nvencAvailable = await IsNvencAvailableAsync();
+
+                    if (nvencAvailable)
+                    {
+                        useNvenc = true;
+                        Log("NVIDIA NVENC is available.");
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            "FFmpeg NVENC is unavailable. CPU encoding will be used.",
+                            "GPU Encoding",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning
+                        );
+
+                        Log("NVENC unavailable. Using CPU encoding.");
+                    }
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "No NVIDIA GPU was detected. CPU encoding will be used.",
+                        "GPU Detection",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
+
+                    Log("No NVIDIA GPU detected. Using CPU encoding.");
+                }
+            }
+            else
+            {
+                Log("User selected CPU encoding.");
+            }
+
+            // =========================================
+            // VALIDATE INPUT
+            // =========================================
 
             if (lstVideos.Items.Count == 0)
             {
@@ -365,6 +473,7 @@ namespace videomerge
                 "MP4 Video (*.mp4)|*.mp4|" +
                 "MKV Video (*.mkv)|*.mkv|" +
                 "All Files (*.*)|*.*";
+
             saveFileDialogOutput.DefaultExt = "mts";
             saveFileDialogOutput.AddExtension = true;
             saveFileDialogOutput.FilterIndex = 1;
@@ -406,7 +515,7 @@ namespace videomerge
                         $"display={info.DisplayWidth}x{info.DisplayHeight}");
                 }
 
-                // Apply rotation to the display dimensions when selecting
+                // Apply rotation to display dimensions when selecting
                 // the common canvas.
                 var displaySizes = videoInfos.Select(v =>
                 {
@@ -426,10 +535,9 @@ namespace videomerge
 
                 Log($"Common output canvas: {targetWidth}x{targetHeight}");
 
-                bool useNvenc = await IsNvencAvailableAsync();
-                Log(useNvenc
-                    ? "NVIDIA H.264 NVENC encoder detected."
-                    : "NVENC not detected; using CPU encoding.");
+                // =========================================
+                // OUTPUT CODEC SELECTION
+                // =========================================
 
                 string extension = Path.GetExtension(outputPath)
                     .ToLowerInvariant();
@@ -439,6 +547,7 @@ namespace videomerge
                     extension == ".mov";
 
                 bool isMkv = extension == ".mkv";
+
                 bool isMtsFamily = extension == ".mts" ||
                     extension == ".m2ts";
 
@@ -448,9 +557,20 @@ namespace videomerge
 
                 if (isMp4Family || isMtsFamily || isMkv)
                 {
-                    videoCodec = useNvenc
-                        ? "-c:v h264_nvenc -preset p5 -rc vbr -cq 20 -b:v 0"
-                        : "-c:v libx264 -preset medium -crf 20";
+                    if (useNvenc)
+                    {
+                        videoCodec =
+                            "-c:v h264_nvenc -preset p5 -rc vbr -cq 20 -b:v 0";
+
+                        Log("Using NVIDIA NVENC encoding.");
+                    }
+                    else
+                    {
+                        videoCodec =
+                            "-c:v libx264 -preset medium -crf 20";
+
+                        Log("Using CPU encoding (libx264).");
+                    }
 
                     audioCodec = "-c:a aac -b:a 192k";
 
@@ -461,20 +581,27 @@ namespace videomerge
                 {
                     videoCodec = "-c:v mpeg4 -q:v 3";
                     audioCodec = "-c:a libmp3lame -b:a 192k";
+
+                    Log("AVI output uses CPU encoding (MPEG-4).");
                 }
                 else if (extension == ".webm")
                 {
                     videoCodec = "-c:v libvpx-vp9 -crf 30 -b:v 0";
                     audioCodec = "-c:a libopus -b:a 128k";
+
+                    Log("WebM output uses CPU encoding (VP9).");
                 }
                 else
                 {
-                    videoCodec = useNvenc
-                        ? "-c:v h264_nvenc -preset p5 -rc vbr -cq 20 -b:v 0"
-                        : "-c:v libx264 -preset medium -crf 20";
+                    MessageBox.Show(
+                        "Unsupported output format: " + extension);
 
-                    audioCodec = "-c:a aac -b:a 192k";
+                    return;
                 }
+
+                // =========================================
+                // NORMALIZE VIDEOS
+                // =========================================
 
                 string ffmpeg = FindExecutable("ffmpeg");
                 var normalizedFiles = new List<string>();
@@ -528,6 +655,10 @@ namespace videomerge
                         (int)Math.Round(
                             90.0 * (i + 1) / videoInfos.Count));
                 }
+
+                // =========================================
+                // CONCATENATE NORMALIZED VIDEOS
+                // =========================================
 
                 string concatFile = Path.Combine(
                     tempDirectory, "concat.txt");
@@ -598,5 +729,6 @@ namespace videomerge
                 }
             }
         }
+
     }
 }
